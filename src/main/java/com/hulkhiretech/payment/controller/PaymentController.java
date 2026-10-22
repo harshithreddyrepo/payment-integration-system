@@ -1,10 +1,11 @@
 package com.hulkhiretech.payment.controller;
 
+import com.hulkhiretech.payment.pojo.PaymentReq;
+import com.hulkhiretech.payment.service.interfaces.PaymentService;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.hulkhiretech.payment.service.interfaces.PaymentService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,10 +21,10 @@ public class PaymentController {
 	}
 
 	@PostMapping
-	public String createPayment() {
+	public PaymentReq createPayment(@RequestBody PaymentReq paymentReq) {
 		log.info("PaymentController.createPayment started");
 		try {
-			return paymentService.createPayment();
+			return paymentService.createPayment(paymentReq);
 		} finally {
 			log.info("PaymentController.createPayment ended");
 		}
