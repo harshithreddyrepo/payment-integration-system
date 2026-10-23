@@ -1,5 +1,6 @@
 package com.hulkhiretech.payment.controller;
 
+import com.hulkhiretech.payment.exception.InvalidHmacSignatureException;
 import com.hulkhiretech.payment.service.interfaces.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,11 +9,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class PaymentControllerTest {
@@ -27,10 +30,12 @@ class PaymentControllerTest {
 	}
 
 	@Test
-	void createPaymentReturnsRequestAsJsonObject() throws Exception {
-		when(paymentService.createPayment(any())).thenAnswer(invocation -> invocation.getArgument(0));
+	void createPaymentReturnsValidationSuccessMessage() throws Exception {
+		when(paymentService.createPayment(any(), eq("client-provided-signature")))
+				.thenReturn("HMAC signature validation successful");
 
 		mockMvc.perform(post("/v1/payments")
+						.header("HMAC-signature", "client-provided-signature")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content("""
 								{
@@ -45,10 +50,53 @@ class PaymentControllerTest {
 								}
 								"""))
 				.andExpect(status().isOk())
-				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-				.andExpect(jsonPath("$.user.firstName").value("Alex"))
-				.andExpect(jsonPath("$.user.email").value("alex@example.com"))
-				.andExpect(jsonPath("$.payment.totalAmount").value(1250))
-				.andExpect(jsonPath("$.payment.currency").value("USD"));
+				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
+				.andExpect(content().string("HMAC signature validation successful"));
+
+		verify(paymentService).createPayment(any(), eq("client-provided-signature"));
+	}
+
+	@Test
+	void createPaymentRejectsInvalidHmacSignature() throws Exception {
+		when(paymentService.createPayment(any(), eq("invalid-signature")))
+				.thenThrow(new InvalidHmacSignatureException());
+
+		mockMvc.perform(post("/v1/payments")
+						.header("HMAC-signature", "invalid-signature")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "user": {
+								    "firstName": "Alex",
+								    "email": "alex@example.com"
+								  },
+								  "payment": {
+								    "totalAmount": 1250,
+								    "currency": "USD"
+								  }
+								}
+								"""))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void createPaymentRequiresHmacSignatureHeader() throws Exception {
+		mockMvc.perform(post("/v1/payments")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "user": {
+								    "firstName": "Alex",
+								    "email": "alex@example.com"
+								  },
+								  "payment": {
+								    "totalAmount": 1250,
+								    "currency": "USD"
+								  }
+								}
+								"""))
+				.andExpect(status().isBadRequest());
+
+		verifyNoInteractions(paymentService);
 	}
 }

@@ -4,6 +4,7 @@ import com.hulkhiretech.payment.pojo.PaymentReq;
 import com.hulkhiretech.payment.service.interfaces.PaymentService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,10 +22,12 @@ public class PaymentController {
 	}
 
 	@PostMapping
-	public PaymentReq createPayment(@RequestBody PaymentReq paymentReq) {
+	public String createPayment(
+			@RequestHeader("HMAC-signature") String hmacSignature,
+			@RequestBody PaymentReq paymentReq) {
 		log.info("PaymentController.createPayment started");
 		try {
-			return paymentService.createPayment(paymentReq);
+			return paymentService.createPayment(paymentReq, hmacSignature);
 		} finally {
 			log.info("PaymentController.createPayment ended");
 		}
