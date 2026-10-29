@@ -1,12 +1,13 @@
 package com.hulkhiretech.payment.controller;
 
-import com.hulkhiretech.payment.exception.InvalidHmacSignatureException;
 import com.hulkhiretech.payment.service.interfaces.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -59,7 +60,7 @@ class PaymentControllerTest {
 	@Test
 	void createPaymentRejectsInvalidHmacSignature() throws Exception {
 		when(paymentService.createPayment(any(), eq("invalid-signature")))
-				.thenThrow(new InvalidHmacSignatureException());
+				.thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid HMAC signature"));
 
 		mockMvc.perform(post("/v1/payments")
 						.header("HMAC-signature", "invalid-signature")
