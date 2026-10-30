@@ -4,5 +4,5 @@ import com.hulkhiretech.payment.pojo.PaymentReq;
 
 public interface PaymentService {
 
-	String createPayment(PaymentReq paymentReq, String hmacSignature);
+	String createPayment(PaymentReq paymentReq);
 }

@@ -27,7 +27,7 @@ public class PaymentController {
 			@RequestBody PaymentReq paymentReq) {
 		log.info("PaymentController.createPayment started");
 		try {
-			return paymentService.createPayment(paymentReq, hmacSignature);
+			return paymentService.createPayment(paymentReq);
 		} finally {
 			log.info("PaymentController.createPayment ended");
 		}

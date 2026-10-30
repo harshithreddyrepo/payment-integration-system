@@ -10,7 +10,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -32,8 +31,8 @@ class PaymentControllerTest {
 
 	@Test
 	void createPaymentReturnsValidationSuccessMessage() throws Exception {
-		when(paymentService.createPayment(any(), eq("client-provided-signature")))
-				.thenReturn("HMAC signature validation successful");
+		when(paymentService.createPayment(any()))
+				.thenReturn("Proceeding with payment creation");
 
 		mockMvc.perform(post("/v1/payments")
 						.header("HMAC-signature", "client-provided-signature")
@@ -52,14 +51,14 @@ class PaymentControllerTest {
 								"""))
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
-				.andExpect(content().string("HMAC signature validation successful"));
+				.andExpect(content().string("Proceeding with payment creation"));
 
-		verify(paymentService).createPayment(any(), eq("client-provided-signature"));
+		verify(paymentService).createPayment(any());
 	}
 
 	@Test
-	void createPaymentRejectsInvalidHmacSignature() throws Exception {
-		when(paymentService.createPayment(any(), eq("invalid-signature")))
+	void createPaymentPropagatesServiceAuthorizationException() throws Exception {
+		when(paymentService.createPayment(any()))
 				.thenThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid HMAC signature"));
 
 		mockMvc.perform(post("/v1/payments")

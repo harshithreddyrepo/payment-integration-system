@@ -1,62 +1,52 @@
 package com.hulkhiretech.payment.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hulkhiretech.payment.pojo.PaymentReq;
-import com.hulkhiretech.payment.service.interfaces.HmacSHA256;
+import com.hulkhiretech.payment.service.impl.validator.ValidatorCheck1;
+import com.hulkhiretech.payment.service.impl.validator.ValidatorCheck2;
+import com.hulkhiretech.payment.service.impl.validator.ValidatorCheck3;
 
 class PaymentServiceImplTest {
 
-	private HmacSHA256 hmacSignatureGenerator;
+	private ApplicationContext applicationContext;
 	private PaymentServiceImpl paymentService;
+	private ValidatorCheck1 validatorCheck1;
+	private ValidatorCheck2 validatorCheck2;
+	private ValidatorCheck3 validatorCheck3;
 
 	@BeforeEach
 	void setUp() {
-		hmacSignatureGenerator = mock(HmacSHA256.class);
-		paymentService = new PaymentServiceImpl(new ObjectMapper(), hmacSignatureGenerator);
+		applicationContext = mock(ApplicationContext.class);
+		validatorCheck1 = mock(ValidatorCheck1.class);
+		validatorCheck2 = mock(ValidatorCheck2.class);
+		validatorCheck3 = mock(ValidatorCheck3.class);
+		when(applicationContext.getBean(ValidatorCheck1.class)).thenReturn(validatorCheck1);
+		when(applicationContext.getBean(ValidatorCheck2.class)).thenReturn(validatorCheck2);
+		when(applicationContext.getBean(ValidatorCheck3.class)).thenReturn(validatorCheck3);
+		paymentService = new PaymentServiceImpl(applicationContext,
+				"VALIDATOR_CHECK1, VALIDATOR_CHECK2, VALIDATOR_CHECK3");
 	}
 
 	@Test
-	void verifiesSignatureAndReturnsSuccessMessage() {
+	void returnsSuccessMessage() {
 		PaymentReq paymentReq = new PaymentReq();
-		String incomingSignature = "sample-base64-signature";
-		String serializedRequest = "{\"user\":null,\"payment\":null}";
 
-		String response = paymentService.createPayment(paymentReq, incomingSignature);
+		String response = paymentService.createPayment(paymentReq);
 
-		assertEquals("HMAC signature validation successful", response);
-		verify(hmacSignatureGenerator)
-				.verifySignature(serializedRequest, incomingSignature);
-	}
-
-	@Test
-	void rejectsNullPaymentRequest() {
-		RuntimeException exception = assertThrows(
-				RuntimeException.class,
-				() -> paymentService.createPayment(null, "signature"));
-		assertEquals("Payment request must not be null", exception.getMessage());
-	}
-
-	@Test
-	void rejectsNonMatchingSignature() {
-		PaymentReq paymentReq = new PaymentReq();
-		String serializedRequest = "{\"user\":null,\"payment\":null}";
-		doThrow(new RuntimeException("Invalid HMAC signature"))
-				.when(hmacSignatureGenerator)
-				.verifySignature(serializedRequest, "different-signature");
-
-		assertThrows(
-				RuntimeException.class,
-				() -> paymentService.createPayment(paymentReq, "different-signature"));
-		verify(hmacSignatureGenerator)
-				.verifySignature(serializedRequest, "different-signature");
+		assertEquals("Proceeding with payment creation", response);
+		verify(applicationContext).getBean(ValidatorCheck1.class);
+		verify(applicationContext).getBean(ValidatorCheck2.class);
+		verify(applicationContext).getBean(ValidatorCheck3.class);
+		verify(validatorCheck1).validate(paymentReq);
+		verify(validatorCheck2).validate(paymentReq);
+		verify(validatorCheck3).validate(paymentReq);
 	}
 }

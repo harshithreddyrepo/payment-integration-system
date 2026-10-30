@@ -3,10 +3,9 @@ package com.hulkhiretech.payment.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hulkhiretech.payment.service.impl.HmacSHA256Impl;
-import com.hulkhiretech.payment.service.interfaces.HmacSHA256;
-
 import org.junit.jupiter.api.Test;
+
+import com.hulkhiretech.payment.service.impl.HmacSHA256Impl;
 
 class HmacSHA256UtilTest {
 
